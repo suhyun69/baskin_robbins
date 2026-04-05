@@ -1,0 +1,73 @@
+syntax = "proto3";
+
+package baskinrobbins;
+
+// ────────────────────────────────────────────────────
+// 서비스 정의
+// ────────────────────────────────────────────────────
+
+service GameMasterService {
+  // 플레이어가 Master에 접속하여 양방향 스트리밍으로 게임에 참가한다.
+  // Client → Master : JoinRequest, TurnResponse
+  // Master → Client : JoinConfirm, GameStart, TurnRequest, GameOver
+  rpc JoinGame (stream PlayerMessage) returns (stream MasterMessage);
+}
+
+// ────────────────────────────────────────────────────
+// Client → Master
+// ────────────────────────────────────────────────────
+
+message PlayerMessage {
+  oneof payload {
+    JoinRequest  join_request  = 1;
+    TurnResponse turn_response = 2;
+  }
+}
+
+message JoinRequest {
+  string player_id   = 1;
+  string player_name = 2;
+}
+
+message TurnResponse {
+  string         player_id = 1;
+  repeated int32 numbers   = 2;  // 선택한 숫자 목록 (1~3개)
+}
+
+// ────────────────────────────────────────────────────
+// Master → Client
+// ────────────────────────────────────────────────────
+
+message MasterMessage {
+  oneof payload {
+    JoinConfirm join_confirm = 1;
+    GameStart   game_start   = 2;
+    TurnRequest turn_request = 3;
+    GameOver    game_over    = 4;
+  }
+}
+
+message JoinConfirm {
+  string player_id      = 1;
+  int32  assigned_order = 2;
+  string message        = 3;
+}
+
+message GameStart {
+  int32           total_players = 1;
+  repeated string player_names  = 2;
+  string          message       = 3;
+}
+
+message TurnRequest {
+  string player_id    = 1;
+  int32  start_number = 2;  // 이번 턴의 시작 번호
+  int32  max_count    = 3;  // 말할 수 있는 최대 개수 (항상 3)
+}
+
+message GameOver {
+  string loser_id      = 1;
+  string loser_name    = 2;
+  int32  losing_number = 3;
+  string message       = 4;
+}

@@ -1,0 +1,45 @@
+services:
+  master:
+    build: .
+    command: python3 run_master.py --players 3
+    environment:
+      - PYTHONUNBUFFERED=1
+    ports:
+      - "50051:50051"
+    healthcheck:
+      test:
+        - "CMD"
+        - "python3"
+        - "-c"
+        - |
+          import grpc
+          from grpc_health.v1 import health_pb2, health_pb2_grpc
+          ch = grpc.insecure_channel('localhost:50051')
+          stub = health_pb2_grpc.HealthStub(ch)
+          r = stub.Check(health_pb2.HealthCheckRequest(service=''))
+          assert r.status == health_pb2.HealthCheckResponse.SERVING
+      interval: 2s
+      timeout: 5s
+      retries: 15
+      start_period: 3s
+
+  agent_1:
+    build: .
+    command: python3 run_client.py --id agent1 --name 에이전트1 --address master:50051
+    depends_on:
+      master:
+        condition: service_healthy
+
+  agent_2:
+    build: .
+    command: python3 run_client.py --id agent2 --name 에이전트2 --address master:50051
+    depends_on:
+      master:
+        condition: service_healthy
+
+  agent_3:
+    build: .
+    command: python3 run_client.py --id agent3 --name 에이전트3 --address master:50051
+    depends_on:
+      master:
+        condition: service_healthy
